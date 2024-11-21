@@ -35,6 +35,9 @@ class GeMMCache : public ClockedObject
         /// The object that owns this object (SimpleCache)
         GeMMCache *owner;
 
+        /// True if the port needs to send a retry req.
+        bool needRetry;
+
         /// If we tried to send a packet and it was blocked, store it here
         PacketPtr blockedPacket;
 
@@ -43,7 +46,7 @@ class GeMMCache : public ClockedObject
          * Constructor. Just calls the superclass constructor.
          */
         CPUSidePort(const std::string& name, int id, GeMMCache *owner) :
-            ResponsePort(name), id(id), owner(owner),
+            ResponsePort(name), id(id), owner(owner), needRetry(false),
             blockedPacket(nullptr)
         { }
 
@@ -159,7 +162,7 @@ class GeMMCache : public ClockedObject
     };
 
     /**
-     * Handle the request from the CPU side. Called from the CPU port
+     * Handle the request to the cache from the CPU side. Called from the CPU port
      * on a timing request.
      *
      * @param requesting packet
@@ -167,7 +170,18 @@ class GeMMCache : public ClockedObject
      * @return true if we can handle the request this cycle, false if the
      *         requestor needs to retry later
      */
-    bool handleRequest(PacketPtr pkt, int port_id);
+    bool handleCacheRequest(PacketPtr pkt, int port_id);
+
+    /**
+     * Handle the request to DRAM from the CPU side. Called from the CPU port
+     * on a timing request.
+     *
+     * @param requesting packet
+     * @param id of the port to send the response
+     * @return true if we can handle the request this cycle, false if the
+     *         requestor needs to retry later
+     */
+    bool handleMemoryRequest(PacketPtr pkt, int port_id);
 
     /**
      * Handle the respone from the memory side. Called from the memory port
@@ -235,23 +249,13 @@ class GeMMCache : public ClockedObject
     /// Latency to check the cache. Number of cycles for both hit and miss
     const Cycles latency;
 
-    /// The starting address of the cache
-    const Addr cacheAddr;
-
-    /// The size of each matrix cache (power of 2)
-    const Addr matrixBytes;
-
-    /// The number of matrices in the cache (power of 2)
-    const Addr numMatrices;
-
     /// Instantiation of the CPU-side port
     std::vector<CPUSidePort> cpuPorts;
 
     /// Instantiation of the memory-side port
     MemSidePort memPort;
 
-    /// True if the CPU has an ongoing request waiting for a response.
-    bool blocked;
+    
 
     /// Packet that we are currently handling. Used for upgrading to larger
     /// cache line sizes
@@ -264,7 +268,7 @@ class GeMMCache : public ClockedObject
     Tick missTime;
 
     /// An incredibly simple cache storage. Maps block addresses to data
-    std::unordered_map<Addr, uint8_t*> cacheStore;
+    std::vector<uint8_t> cacheArray;
 
     /// Cache statistics
   protected:
@@ -276,6 +280,18 @@ class GeMMCache : public ClockedObject
         statistics::Histogram missLatency;
         statistics::Formula hitRatio;
     } stats;
+
+    /// The starting address of the cache
+    const Addr cacheAddr;
+
+    /// The size of each matrix cache (power of 2)
+    const Addr matrixBytes;
+
+    /// The number of matrices in the cache (power of 2)
+    const Addr numMatrices;
+
+    /// True if the CPU has an ongoing request waiting for a response.
+    bool blocked;
 
   public:
 

@@ -42,7 +42,8 @@ SimpleCache::SimpleCache(const SimpleCacheParams &params) :
     blockSize(params.system->cacheLineSize()),
     capacity(params.size / blockSize),
     memPort(params.name + ".mem_side", this),
-    blocked(false), originalPacket(nullptr), waitingPortId(-1), stats(this)
+    blocked(false), originalPacket(nullptr), waitingPortId(-1), stats(this),
+    cacheArray(std::vector<uint8_t>(params.size, 0))
 {
     // Since the CPU side ports are a vector of ports, create an instance of
     // the CPUSidePort for each connection. This member of params is

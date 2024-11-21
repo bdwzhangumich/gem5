@@ -294,6 +294,8 @@ class SimpleCache : public ClockedObject
     /// An incredibly simple cache storage. Maps block addresses to data
     std::unordered_map<Addr, uint8_t*> cacheStore;
 
+    std::vector<uint8_t> cacheArray;
+
     /// Cache statistics
   protected:
     struct SimpleCacheStats : public statistics::Group

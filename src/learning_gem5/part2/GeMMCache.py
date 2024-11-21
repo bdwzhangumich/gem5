@@ -41,6 +41,10 @@ class GeMMCache(ClockedObject):
 
     latency = Param.Cycles(1, "Cycles taken on a hit or to resolve a miss")
 
-    size = Param.MemorySize("16kB", "The size of the cache")
+    cacheAddr = Param.Int(0, "Starting address of the cache")
+    
+    matrixBytes = Param.Int(256, "The size of each matrix in the cache in bytes (power of 2)")
+
+    numMatrices = Param.Int(16, "The number of matrices in the cache (power of 2)")
 
     system = Param.System(Parent.any, "The system this cache is part of")
